@@ -56,13 +56,13 @@ const router = Router();
  *     style: simple
  *     schema:
  *       type: string
- *     description: The sort field. One of followers, repositories, or joined. Default: results are sorted by best match.
+ *     description: The sort field. One of followers, repositories, or joined. By default results are sorted by best match.
  *   - in: query
  *     name: order
  *     style: simple
  *     schema:
  *       type: string
- *     description: The sort order if sort parameter is provided. One of asc or desc. Default: desc.
+ *     description: The sort order if sort parameter is provided. One of asc or desc. By default desc.
  *   - in: query
  *     name: page
  *     style: simple
