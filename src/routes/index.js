@@ -1,13 +1,9 @@
 import { Router } from 'express';
-import { query, validationResult, param } from "express-validator";
-import { Octokit } from "@octokit/core";
+import { query, validationResult, param } from 'express-validator';
+import { Octokit } from '@octokit/core';
 import githubUsernameRegex from 'github-username-regex';
 import toCamelCaseParser from '../utils/toCamelCaseParser.js';
-;
-
 const router = Router();
-
-
 
 /**
  * @openapi
@@ -49,23 +45,94 @@ const router = Router();
  *       default: 30
  *       minimum: 1
  *     description: Results per page (max 100)
+ *   - in: query
+ *     name: search
+ *     style: simple
+ *     schema:
+ *       type: string
+ *     description: A search term. This can be any word or even a phrase. GitHub will search all users for this value.
+ *   - in: query
+ *     name: sort
+ *     style: simple
+ *     schema:
+ *       type: string
+ *     description: The sort field. One of followers, repositories, or joined. Default: results are sorted by best match.
+ *   - in: query
+ *     name: order
+ *     style: simple
+ *     schema:
+ *       type: string
+ *     description: The sort order if sort parameter is provided. One of asc or desc. Default: desc.
+ *   - in: query
+ *     name: page
+ *     style: simple
+ *     schema:
+ *       type: integer
+ *       minimum: 1
+ *     description: Page number of the results to fetch.
  */
-router.get('/users', [
-  query('perPage').optional().default(30).isInt({ min: 1, max: 100 }).withMessage('perPage must be an integer between 1 and 100'),
-  query('since').optional().isInt({ min: 0 }).withMessage('since must be an integer greater than 0'),
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  } else {
-    const octokit = new Octokit();
-    const response = await octokit.request('GET /users', {
-      per_page: req.query.perPage,
-      since: req.query.since,
-    });
-    res.send(toCamelCaseParser(response.data));
+router.get(
+  '/users',
+  [
+    query('perPage')
+      .optional()
+      .default(30)
+      .isInt({ min: 1, max: 100 })
+      .withMessage('perPage must be an integer between 1 and 100'),
+    query('since')
+      .optional()
+      .if(query('search').not().exists())
+      .isInt({ min: 0 })
+      .withMessage('since must be an integer greater than 0'),
+    query('search')
+      .optional()
+      .isString()
+      .isLength({ min: 3 })
+      .withMessage('search must be a string with at least 3 characters'),
+    query('sort')
+      .if(query('search').exists())
+      .optional()
+      .isIn(['followers', 'repositories', 'joined'])
+      .withMessage(
+        'sort must be one of the following values: followers, repositories, joined'
+      ),
+    query('order')
+      .if(query('search').exists())
+      .optional()
+      .isIn(['asc', 'desc'])
+      .withMessage('order must be one of the following values: asc, desc'),
+    query('page')
+      .if(query('search').exists())
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('page must be an integer greater than 0'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    } else {
+      const octokit = new Octokit();
+      const { perPage, since, search, sort, order, page } = req.query;
+      let response = null;
+      if (search) {
+        response = await octokit.request('GET /search/users', {
+          sort,
+          page,
+          order,
+          q: `${search} in:login name email type:user`,
+          per_page: perPage,
+        });
+      } else {
+        response = await octokit.request('GET /users', {
+          since,
+          per_page: perPage,
+        });
+      }
+      res.send(toCamelCaseParser(response.data));
+    }
   }
-});
+);
 
 /**
  * @openapi
@@ -102,28 +169,35 @@ router.get('/users', [
  *       type: string
  *     description: The username of the user
  */
-router.get('/users/:username', [
-  param('username').isString().matches(githubUsernameRegex).withMessage('Username must be a valid github username'),
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  } else {
-    const octokit = new Octokit();
-    try {
-      const response = await octokit.request('GET /users/{username}', {
-        username: req.params.username,
-      });
-      res.send(toCamelCaseParser(response.data));
-    } catch (error) {
-      if (error.status === 404) {
-        res.status(404).send({ error: 'User not found' });
-      } else {
-        res.status(500).send({ error: 'Something went wrong' });
+router.get(
+  '/users/:username',
+  [
+    param('username')
+      .isString()
+      .matches(githubUsernameRegex)
+      .withMessage('Username must be a valid github username'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    } else {
+      const octokit = new Octokit();
+      try {
+        const response = await octokit.request('GET /users/{username}', {
+          username: req.params.username,
+        });
+        res.send(toCamelCaseParser(response.data));
+      } catch (error) {
+        if (error.status === 404) {
+          res.status(404).send({ error: 'User not found' });
+        } else {
+          res.status(500).send({ error: 'Something went wrong' });
+        }
       }
     }
   }
-});
+);
 
 /**
  * @swagger
@@ -240,7 +314,7 @@ router.get('/users/:username', [
  *         value:
  *           type: string
  *           description: The value that failed validation
- *         msg: 
+ *         msg:
  *           type: string
  *           description: The error message
  *         param:
@@ -257,6 +331,5 @@ router.get('/users/:username', [
  *           items:
  *             $ref: '#/components/schemas/ValidationError'
  */
-
 
 export default router;
