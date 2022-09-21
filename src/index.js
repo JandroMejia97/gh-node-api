@@ -25,6 +25,16 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification, {
   explorer: true,
 }));
 
+app.use((req, res, next) => {
+  res.status(404);
+  if (req.accepts('html')) {
+    res.redirect('/docs');
+    return;
+  }
+  
+  res.send({ error: 'Resource isn\'t found' });
+})
+
 // Start the server
 httpServer.listen(port, () => {
   console.log(`Server running on port ${port}`);
