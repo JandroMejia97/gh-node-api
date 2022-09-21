@@ -120,7 +120,7 @@ router.get(
           sort,
           page,
           order,
-          q: `${search} in:login name email type:user`,
+          q: `${search} in:login,name,email`,
           per_page: perPage,
         });
       } else {
