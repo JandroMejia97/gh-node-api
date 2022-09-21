@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  dev-api:
+    container_name: dev-gh-node-api
+    build:
+      context: .
+      target: development
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    volumes:
+      - '.:/usr/src/app'
+  prod-api:
+    container_name: gh-node-api
+    build:
+      context: .
+      target: production
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    volumes:
+      - '.:/usr/src/app'
