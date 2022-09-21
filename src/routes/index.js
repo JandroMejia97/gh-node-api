@@ -37,7 +37,7 @@ const router = Router();
  *       minimum: 0
  *     description: The integer ID of the last User that you’ve seen.
  *   - in: query
- *     name: per_page
+ *     name: perPage
  *     style: simple
  *     schema:
  *       type: integer
