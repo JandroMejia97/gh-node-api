@@ -1,4 +1,5 @@
 # GitHub Node API
+This API was built in NodeJS to consume the GitHub API to search for users by their username. It is public and open to any site that wants to consume it.
 
 ## Contents
 
@@ -45,6 +46,7 @@
 ## Using Docker Compose
 
 ### Requirements
+- Docker
 - Docker Compose
 
 ### Running the project
