@@ -4,10 +4,14 @@ import routes from './routes/index.js';
 import config from './config/index.js';
 import swaggerUi from 'swagger-ui-express';
 import openapiSpecification from './docs/basicInfo.js';
+import cors from 'cors';
 
 const app = express();
 
 const httpServer = createServer(app);
+
+// Enable CORS
+app.use(cors(config.cors));
 
 // Setup the server
 const port = config.serverPort;
